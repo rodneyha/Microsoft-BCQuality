@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'rodneyha/MS-BCQuality'
+    if: github.event.repository.fork
     runs-on: ubuntu-latest
     steps:
       - name: Merge upstream main
