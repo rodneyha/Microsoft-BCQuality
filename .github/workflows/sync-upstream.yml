@@ -1,0 +1,39 @@
+name: Sync fork with upstream
+
+# Merges microsoft/BCQuality main into this fork's main every night.
+# The fork carries its own commits (custom layer), so the sync is a merge,
+# not a fast-forward. A merge conflict fails the run; resolve it by hand.
+
+on:
+  schedule:
+    - cron: '17 2 * * *'   # 02:17 UTC nightly
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'rodneyha/MS-BCQuality'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge upstream main
+        env:
+          # SYNC_TOKEN: fine-grained PAT on this repo with Contents and Workflows
+          # read/write. GITHUB_TOKEN cannot push upstream changes to
+          # .github/workflows, and its pushes do not trigger the index workflows.
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          if ! result=$(gh api -X POST "repos/${GITHUB_REPOSITORY}/merge-upstream" -f branch=main 2>&1); then
+            echo "::error::Upstream sync failed: ${result}"
+            echo "A 409 means a merge conflict: merge microsoft/BCQuality main into main locally and push."
+            exit 1
+          fi
+          echo "${result}"
+          echo "### Upstream sync" >> "$GITHUB_STEP_SUMMARY"
+          echo "$(echo "${result}" | jq -r '"\(.merge_type): \(.message)"')" >> "$GITHUB_STEP_SUMMARY"
