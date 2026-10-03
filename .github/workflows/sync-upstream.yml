@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.event.repository.fork
+    if: github.repository_owner == 'rodneyha'
     runs-on: ubuntu-latest
     steps:
       - name: Merge upstream main
